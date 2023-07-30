@@ -2,7 +2,11 @@
 // Hi NaResolver						//
 // Author: MidTerm                   	//
 // Version: v2.0.0                      //
+<<<<<<< HEAD
 // Branch: Mono							//
+=======
+// Branch: Mono				//
+>>>>>>> 47d14087cae7c8f5678066230e9010c6822ac29b
 // License: MIT                         //
 //**************************************//
 
@@ -647,4 +651,8 @@ inline bool NaResolver::MethodVerifyParams(MonoMethod* method, std::vector<std::
 	static void set_##name(klass value) { *reinterpret_cast<klass *>(*reinterpret_cast<uintptr_t *>((uintptr_t)ThisClass() + STATIC_AREA_OFFSET) + offset) = value; }
 #define METHOD(returnType, parameters, signature) static auto function = (returnType(*) parameters)(Il2CppResolver->GetMethod(ThisClass(), signature));
 
+<<<<<<< HEAD
 #endif
+=======
+#endif
+>>>>>>> 47d14087cae7c8f5678066230e9010c6822ac29b
