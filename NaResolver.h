@@ -1,7 +1,7 @@
 //**************************************//
 // Hi NaResolver			//
 // Author: MidTerm                   	//
-// Version: v2.0.0                      //
+// Version: v2.2.0                      //
 // Branch: Mono				//
 // License: MIT                         //
 //**************************************//
@@ -26,6 +26,7 @@ typedef void MonoImage;
 typedef void MonoString;
 typedef void MonoMethod;
 typedef void MonoType;
+typedef void MonoObject;
 typedef void MonoMethodSignature;
 typedef void MonoAssemblyName;
 typedef void MonoClassField;
@@ -90,7 +91,7 @@ public:
 		{"mono_field_get_flags", nullptr},					//uint32_t(MonoClassField *field);
 		{"mono_field_get_type", nullptr},					//MonoType*(MonoClassField *field);
 		{"mono_field_get_offset", nullptr},					//uint32_t(MonoClassField *field);
-		
+
 		{"mono_compile_method", nullptr},					//void* (MonoMethod *method);
 	};
 
@@ -113,7 +114,7 @@ public:
 
 	inline MonoDomain* GetRootDomain() { return ((MonoDomain * (*)(void))monoMethodMap["mono_get_root_domain"])(); }
 	inline MonoAssembly* OpenDomainAssembly(MonoDomain* domain, const char* path) { return ((MonoAssembly * (*)(MonoDomain*, const char*))monoMethodMap["mono_domain_assembly_open"])(domain, path); }
-	
+
 	inline char* GetTypeName(MonoType* type) { return ((char* (*)(MonoType*))monoMethodMap["mono_type_get_name"])(type); }
 	inline mono_bool IsTypeByRef(MonoType* type) { return ((mono_bool(*)(MonoType*))monoMethodMap["mono_type_is_byref"])(type); }
 	inline uint32_t GetTypeAttrs(MonoType* type) { return ((uint32_t(*)(MonoType*))monoMethodMap["mono_type_get_attrs"])(type); }
@@ -121,11 +122,11 @@ public:
 
 	inline MonoThread* AttachThread(MonoDomain* domain) { return ((MonoThread * (*)(MonoDomain*))monoMethodMap["mono_thread_attach"])(domain); }
 	inline void DetachThread(MonoThread* thread) { ((void(*)(MonoThread*))monoMethodMap["mono_thread_detach"])(thread); }
-	
+
 	inline MonoString* NewString(MonoDomain* domain, const char* text) { return ((MonoString * (*)(MonoDomain*, const char*))monoMethodMap["mono_string_new"])(domain, text); }
 	inline uint16_t* GetStringChars(MonoString* str) { return ((uint16_t * (*)(MonoString*))monoMethodMap["mono_string_chars"])(str); }
 	inline int GetStringLength(MonoString* str) { return ((int(*)(MonoString*))monoMethodMap["mono_string_length"])(str); }
-	
+
 	inline MonoMethod* GetClassMethods(MonoClass* klass, void** iter) { return ((MonoMethod * (*)(MonoClass*, void**))monoMethodMap["mono_class_get_methods"])(klass, iter); }
 	inline MonoClass* GetClassFromName(MonoImage* image, const char* name_space, const char* name) { return ((MonoClass * (*)(MonoImage*, const char*, const char*))monoMethodMap["mono_class_from_name"])(image, name_space, name); }
 	inline const char* GetClassName(MonoClass* klass) { return ((const char* (*)(MonoClass*))monoMethodMap["mono_class_get_name"])(klass); }
@@ -144,15 +145,15 @@ public:
 
 	inline MonoImage* GetAssemblyImage(MonoAssembly* assembly) { return ((MonoImage * (*)(MonoAssembly*))monoMethodMap["mono_assembly_get_image"])(assembly); }
 	inline MonoAssemblyName* GetAssemblyName(MonoAssembly* assembly) { return ((MonoAssemblyName * (*)(MonoAssembly*))monoMethodMap["mono_assembly_get_name"])(assembly); }
-	
+
 	inline const char* GetAssemblyNameName(MonoAssemblyName* assemblyName) { return ((const char* (*)(MonoAssemblyName*))monoMethodMap["mono_assembly_name_get_name"])(assemblyName); }
-	
+
 	inline const char* GetMethodName(MonoMethod* method) { return ((const char* (*)(MonoMethod*))monoMethodMap["mono_method_get_name"])(method); }
 	inline MonoMethodSignature* GetMethodSignature(MonoMethod* method) { return ((MonoMethodSignature * (*)(MonoMethod*))monoMethodMap["mono_method_signature"])(method); }
 	inline uint32_t GetMethodFlags(MonoMethod* method, uint32_t* iflags) { return ((uint32_t(*)(MonoMethod*, uint32_t*))monoMethodMap["mono_method_get_flags"])(method, iflags); }
 	inline void GetMethodParamNames(MonoMethod* method, const char** names) { ((void(*)(MonoMethod*, const char**))monoMethodMap["mono_method_get_param_names"])(method, names); }
 	inline MonoType* GetMethodReturnType(MonoMethod* method)
-	{ 
+	{
 		MonoMethodSignature* signature = GetMethodSignature(method);
 		if (signature == nullptr)
 		{
@@ -179,7 +180,7 @@ public:
 		return ((MonoType * (*)(MonoMethodSignature*, void**))monoMethodMap["mono_signature_get_params"])(signature, iter);
 	}
 
-	
+
 	inline MonoAssembly* GetImageAssembly(MonoImage* image) { return ((MonoAssembly * (*)(MonoImage*))monoMethodMap["mono_image_get_assembly"])(image); }
 
 	inline const char* GetFieldName(MonoClassField* field) { return ((const char* (*)(MonoClassField*))monoMethodMap["mono_field_get_name"])(field); }
@@ -635,7 +636,7 @@ inline bool NaResolver::MethodVerifyParams(MonoMethod* method, std::vector<std::
 
 #define STATIC_AREA_OFFSET (sizeof(void *) == 8 ? 0xB8 : 0xC5)
 #define CLASS(assembly, namespaze, klass) \
-	static struct Il2CppClass *ThisClass() { return Il2CppResolver->GetClassEx(assembly, namespaze, klass); }
+	static struct MonoClass *ThisClass() { return MonoResolver->GetClassEx(assembly, namespaze, klass); }
 #define MEMBER(klass, name, offset) \
 	struct                          \
 	{                               \
@@ -645,7 +646,6 @@ inline bool NaResolver::MethodVerifyParams(MonoMethod* method, std::vector<std::
 #define STATIC_MEMBER(klass, name, offset)                                                                                                                 \
 	static klass get_##name() { return *reinterpret_cast<klass *>(*reinterpret_cast<uintptr_t *>((uintptr_t)ThisClass() + STATIC_AREA_OFFSET) + offset); } \
 	static void set_##name(klass value) { *reinterpret_cast<klass *>(*reinterpret_cast<uintptr_t *>((uintptr_t)ThisClass() + STATIC_AREA_OFFSET) + offset) = value; }
-#define METHOD(returnType, parameters, signature) static auto function = (returnType(*) parameters)(Il2CppResolver->GetMethod(ThisClass(), signature));
+#define METHOD(returnType, parameters, signature) static auto function = (returnType(*) parameters)(MonoResolver->GetMethod(ThisClass(), signature));
 
 #endif
->>>>>>> 47d14087cae7c8f5678066230e9010c6822ac29b
